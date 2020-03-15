@@ -1,0 +1,132 @@
+---
+title: "tidydata"
+author: "Rachel Lee"
+date: "3/14/2020"
+output: html_document
+---
+
+```{r pivot_longer}
+library(tidyverse)
+
+options(tibble.print_min = 5)
+
+#pivot_longer: 
+
+###import a sas file using "haven" package 
+pulse_data = 
+  haven::read_sas("/Users/rachellee/Desktop/ds_data/public_pulse_data.sas7bdat") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit" , #create a variable called "visit"
+    names_prefix = "bdi_score_",  #removes matching prefix
+    values_to = "bdi") %>%   #create a numeric var called "bdi"
+  select(id, visit, everything()) %>%
+  mutate(
+    visit = replace(visit, visit == "bl", "00m"),
+    visit = factor(visit, levels = str_c(c("00", "01", "06", "12"), "m"))
+  ) %>%
+  arrange(id, visit)
+#levels defines the order of the factor variable 
+  ##str_c combines two strings of character/numeric vectors into 1 
+    
+print(pulse_data, n =12)
+
+```
+
+
+```{r}
+library(tidyverse)
+
+litters_data = read_csv("/Users/rachellee/Desktop/ds_data/FAS_litters.csv", col_types = "ccddiiii") %>%
+  janitor::clean_names() %>%
+  separate(group, into = c("dose", "day_of_tx"), sep = 3) %>%
+  mutate(
+    dose = str_to_lower(dose),
+    wt_gain = gd18_weight - gd0_weight) %>%
+  arrange(litter_number)
+litters_data
+
+
+litters_data %>%
+  select(litter_number, ends_with("weight")) %>%
+  pivot_longer(
+    gd0_weight:gd18_weight,
+    names_to = "gd",
+    values_to = "weight") %>%
+  mutate(gd = recode(gd, "gd0_weight"=0, "gd18_weight"=18))
+litters_data
+```
+
+```{r pivot_wider}
+analysis_result = tibble(
+  group = c("treatment", "treatment", "placebo", "placebo"),
+  time = c("pre", "post", "pre", "post"),
+  mean = c(4, 8, 3.5, 4)
+)
+
+analysis_result = 
+  pivot_wider(
+  analysis_result,
+  names_from = "time",
+  values_from = "mean",
+  )
+
+analysis_result
+
+knitr::kable(analysis_result) #make a pretty table
+```
+
+
+```{r binding_rows}
+
+#create a new dataset called "fellowship_ring"
+
+fellowship_ring =
+  readxl::read_excel("/Users/rachellee/Desktop/ds_data/LotR_Words.xlsx", range = "B3:D6") %>%
+  mutate(movie = "fellowship_ring")  
+      #create a new variable called "movie" in            dataset "fellowship_ring"
+
+#create a new dataset called "two_towers"
+
+two_towers = 
+   readxl::read_excel("/Users/rachellee/Desktop/ds_data/LotR_Words.xlsx", range = "F3:H6") %>%
+  mutate(movie = "two_towers")  
+
+
+#create a new dataset called "return_king"
+
+return_king = 
+  readxl::read_excel("/Users/rachellee/Desktop/ds_data/LotR_Words.xlsx", range = "J3:L6") %>%
+  mutate(movie = "return_king")
+
+
+#stacking up the three tables from above
+
+ #data name = lotr_tidy
+
+lotr_tidy =
+  bind_rows(fellowship_ring, two_towers, return_king) %>%
+  janitor::clean_names()  %>%
+  pivot_longer(
+    female:male,     
+    #we want to combine "female" and "male"          columns and create one new column called "sex" 
+    names_to = "sex",
+    values_to = "words") %>%
+  mutate(race = str_to_lower(race)) %>%
+  select(movie, everything())
+
+  lotr_tidy
+
+```
+
+
+```{r joining_datasets}
+
+
+
+
+```
+
+
+
